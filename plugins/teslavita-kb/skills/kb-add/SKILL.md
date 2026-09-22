@@ -1,6 +1,6 @@
 ---
 name: kb-add
-description: Add a document to the Tesla Vita company knowledge base — meeting notes, a meeting recording (audio is transcribed automatically), a PDF, Word or Excel file, or a text summary. Use when the user wants to save, upload or send something to the company knowledge base ("добавь в базу знаний", "загрузи запись совещания").
+description: Add a document or any file to the Tesla Vita company knowledge base — meeting notes, a meeting recording (audio is transcribed automatically), a PDF, Word or Excel file, a text summary, or a creative, picture, video or other file (kept in the company file storage and linked from the graph). Use when the user wants to save, upload or send something to the company knowledge base ("добавь в базу знаний", "загрузи запись совещания").
 ---
 
 # Добавление в базу знаний Tesla Vita
@@ -10,12 +10,14 @@ description: Add a document to the Tesla Vita company knowledge base — meeting
 Перед загрузкой узнайте или выведите из контекста:
 - **название** — по смыслу, например «Планёрка по сайту», а не имя файла;
 - **дату встречи** в виде ГГГГ-ММ-ДД (спросите, если неясно; для вчерашнего совещания посчитайте дату);
-- **пояснение** (необязательно) — кто участвовал, о чём встреча. Оно попадает в граф и помогает поиску.
+- **пояснение** — кто участвовал, о чём встреча. Оно попадает в граф и помогает поиску. Для креатива, видео и прочих файлов, у которых нет текста, пояснение обязательно по смыслу: что это, для какого проекта или кампании. Только по нему такой файл и найдут.
 
 Как загрузить:
 - **Текст уже есть в разговоре** (заметки, итоги) → `add_text(title, text, meeting_date, note)`.
-- **Файл на компьютере** → `upload_link(filename, title, meeting_date, note)`, затем выполните возвращённую команду `curl`, подставив настоящий путь к файлу. Ссылка одноразовая и живёт 30 минут. Если есть программа `tv-kb`, можно проще: `tv-kb add ФАЙЛ --title "…" --date ГГГГ-ММ-ДД`.
+- **Файл на компьютере** → узнайте размер (`wc -c < ФАЙЛ`), вызовите `upload_link(filename, size_bytes, title, meeting_date, note)` и выполните возвращённую команду как есть, с настоящим путём к файлу. До 95 МБ это один `curl` (ссылка одноразовая, живёт 30 минут). Файл больше — многострочная команда: она режет его на части по 50 МБ и отправляет прямо в хранилище (до 20 ГБ, ссылка живёт 12 часов). Если есть программа `tv-kb`, для файлов до 95 МБ можно проще: `tv-kb add ФАЙЛ --title "…" --date ГГГГ-ММ-ДД`.
 
-Можно: текст (.txt .md .html .csv и др.), PDF с текстовым слоем, .docx, .xlsx, аудио (.mp3 .m4a .wav .ogg .opus .flac) до 95 МБ. Видео не принимается — попросите аудиодорожку. Сканы PDF без текста не распознаются.
+Принимается любой файл, сам файл хранится как есть. Текст, PDF с текстовым слоем, .docx, .xlsx и аудио (.mp3 .m4a .wav .ogg .opus .flac) разбираются в граф, аудио расшифровывается. Картинки (.png .jpg .webp .gif) модель описывает по изображению. Видео и остальные файлы не читаются: в граф они попадают по названию и пояснению. Сканы PDF без текста не распознаются.
+
+У документа с файлом есть постоянная ссылка (`admin.teslavita.space/files/…`, открывается после входа в кабинет). Прямую ссылку на 5 минут, например чтобы скачать файл, даёт `file_link(id)`.
 
 После загрузки документ обрабатывается несколько минут (аудио дольше): `document_status(id)` показывает, когда он попал в граф. Сообщите пользователю id и что проверка статуса доступна.
