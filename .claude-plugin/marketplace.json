@@ -1,0 +1,16 @@
+{
+  "name": "teslavita",
+  "owner": {
+    "name": "Tesla Vita"
+  },
+  "metadata": {
+    "description": "Плагины Tesla Vita для Claude Code и Codex"
+  },
+  "plugins": [
+    {
+      "name": "teslavita-kb",
+      "source": "./plugins/teslavita-kb",
+      "description": "База знаний Tesla Vita: совещания, записи и документы компании в виде графа — поиск и добавление"
+    }
+  ]
+}

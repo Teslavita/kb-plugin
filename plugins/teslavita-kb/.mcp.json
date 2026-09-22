@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "teslavita-kb": { "type": "http", "url": "https://kb.teslavita.space/mcp" }
+  }
+}

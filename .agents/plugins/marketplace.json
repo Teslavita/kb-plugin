@@ -1,0 +1,12 @@
+{
+  "name": "teslavita",
+  "interface": { "displayName": "Tesla Vita" },
+  "plugins": [
+    {
+      "name": "teslavita-kb",
+      "source": { "source": "local", "path": "./plugins/teslavita-kb" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}
