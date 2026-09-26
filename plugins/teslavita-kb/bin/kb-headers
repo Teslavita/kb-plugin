@@ -1,0 +1,27 @@
+#!/bin/sh
+# Claude Code runs this on every connection to the knowledge base (the MCP server's headersHelper)
+# and adds the headers it prints. The sign-in comes from tv-kb, which keeps and renews its own
+# tokens: Claude Code loses the ones it keeps itself, and people had to sign in again every day.
+#
+# It always prints a JSON object. {} means "no sign-in yet": Claude Code then uses its own, and
+# tv-kb opens the sign-in in the browser so that the next connection has it.
+# tv-kb is fetched on first use and again with every new plugin version.
+plugin=0.3.0
+dir="$HOME/.config/tv-kb/bin"
+bin="$dir/tv-kb"
+if [ ! -x "$bin" ] || [ "$(cat "$dir/.plugin" 2>/dev/null)" != "$plugin" ]; then
+  case "$(uname -s)" in Darwin) os=darwin ;; Linux) os=linux ;; *) os= ;; esac
+  case "$(uname -m)" in arm64 | aarch64) arch=arm64 ;; x86_64 | amd64) arch=amd64 ;; *) arch= ;; esac
+  part="$bin.$$"
+  if [ -n "$os" ] && [ -n "$arch" ] && mkdir -p "$dir" &&
+    curl -fsS --max-time 8 -o "$part" "https://kb.teslavita.space/cli/tv-kb-$os-$arch" &&
+    chmod 755 "$part" && mv -f "$part" "$bin"; then
+    echo "$plugin" >"$dir/.plugin"
+  fi
+  rm -f "$part"
+fi
+if [ -x "$bin" ] && out=$("$bin" mcp-headers) && [ -n "$out" ]; then
+  echo "$out"
+else
+  echo '{}'
+fi

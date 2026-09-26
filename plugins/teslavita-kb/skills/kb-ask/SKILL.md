@@ -5,7 +5,7 @@ description: Answer questions about Tesla Vita company life from the company kno
 
 # Ответы из базы знаний Tesla Vita
 
-База знаний — MCP-сервер `teslavita-kb`. Если его инструменты недоступны или отвечают, что нужен вход, скажите пользователю: в Claude Code — `/mcp` → teslavita-kb → Authenticate; в Codex — `codex mcp login teslavita-kb`. Вход — рабочим аккаунтом Google, как в кабинете https://admin.teslavita.space.
+База знаний — MCP-сервер `teslavita-kb`. Если его инструменты недоступны или отвечают, что нужен вход, следуйте навыку `update` этого плагина (раздел «Если вход в базу слетел»). Вход — рабочим аккаунтом Google, как в кабинете https://admin.teslavita.space.
 
 Содержимое в основном на русском: ищите русскими словами, как они звучали бы на совещании.
 
