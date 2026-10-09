@@ -17,7 +17,7 @@ claude plugin install teslavita-kb@teslavita
 claude plugin marketplace update teslavita && claude plugin update teslavita-kb@teslavita
 ```
 
-Чтобы обновления приходили сами: `/plugin` → Marketplaces → teslavita → Enable auto-update. Если плагин устарел, база знаний сама скажет об этом в ответе.
+После установки включите автообновление — так принято в команде: `/plugin` → Marketplaces → teslavita → Enable auto-update (навык `/teslavita-kb:update` включает его сам). Если плагин устарел, база знаний сама скажет об этом в ответе.
 
 Если вход слетел: `~/.config/tv-kb/bin/tv-kb login`, затем Reconnect. Подробно — в навыке `/teslavita-kb:update`.
 
