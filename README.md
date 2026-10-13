@@ -31,4 +31,4 @@ codex plugin marketplace add Teslavita/kb-plugin
 
 ## Выпуск новой версии
 
-Поднимите `version` в `plugins/teslavita-kb/.claude-plugin/plugin.json` и `.codex-plugin/plugin.json`, в заголовках `X-Teslavita-Plugin` в `.mcp.json` и в `plugin=` в `bin/kb-headers` — везде одно число. База знаний читает версию из этого репозитория и предлагает обновиться всем, у кого она старее.
+Запустите `scripts/set-version.sh 0.5.3` (своё число): оно меняет версию во всех пяти местах — `version` в `plugins/teslavita-kb/.claude-plugin/plugin.json` и `.codex-plugin/plugin.json`, два заголовка `X-Teslavita-Plugin` в `.mcp.json` и `plugin=` в `bin/kb-headers` — и проверяет, что число везде одно. Без аргумента скрипт только проверяет. База знаний читает версию из `plugin.json` этого репозитория и сравнивает с заголовком, который шлёт установленный плагин: если в каком-то месте число осталось старым, база говорит «вышло обновление» тем, у кого плагин уже свежий.
