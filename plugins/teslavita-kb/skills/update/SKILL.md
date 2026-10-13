@@ -15,7 +15,7 @@ claude plugin marketplace update teslavita && claude plugin update teslavita-kb@
 
 Новая версия начинает работать в новой сессии. Скажите об этом пользователю.
 
-Затем включите автообновление — так принято в команде Tesla Vita, чтобы следующие версии ставились сами (решение Сергея, 09.10.2026). Проверьте `~/.claude/settings.json`: если в `extraKnownMarketplaces.teslavita` нет `"autoUpdate": true` — добавьте его, не затирая остальное; если блока `teslavita` нет — добавьте целиком:
+Затем включите автообновление — так принято в команде Tesla Vita, чтобы следующие версии ставились сами. Проверьте `~/.claude/settings.json`: если в `extraKnownMarketplaces.teslavita` нет `"autoUpdate": true` — добавьте его, не затирая остальное; если блока `teslavita` нет — добавьте целиком:
 
 ```json
 "extraKnownMarketplaces": {
@@ -29,12 +29,11 @@ claude plugin marketplace update teslavita && claude plugin update teslavita-kb@
 
 ## Если вход в базу слетел или инструменты недоступны
 
-С версии 0.3.0 вход держит программа tv-kb (`~/.config/tv-kb/bin/tv-kb`, плагин скачивает её сам): она хранит вход полгода и продлевает его, пока базой пользуются. При первом подключении в браузере открывается вход в кабинет — рабочий аккаунт Google, затем «Разрешить».
+Вход держит программа tv-kb (`~/.config/tv-kb/bin/tv-kb`, плагин скачивает её сам): она хранит вход полгода и продлевает его, пока базой пользуются. При первом подключении в браузере открывается вход в кабинет — рабочий аккаунт Google, затем «Разрешить».
 
-1. Проверьте версию: `claude plugin list` — нужен `teslavita-kb` 0.3.0 или новее; если старее — обновите (выше).
-2. Кто вошёл: `~/.config/tv-kb/bin/tv-kb whoami`. Если просит войти — `~/.config/tv-kb/bin/tv-kb login` (откроется браузер).
-3. После входа переподключите сервер: `/mcp` → teslavita-kb → Reconnect, или начните новую сессию.
-4. Не помогло — переустановите плагин:
+1. Кто вошёл: `~/.config/tv-kb/bin/tv-kb whoami`. Если просит войти — `~/.config/tv-kb/bin/tv-kb login` (откроется браузер).
+2. После входа переподключите сервер: `/mcp` → teslavita-kb → Reconnect, или начните новую сессию.
+3. Не помогло — переустановите плагин:
    ```bash
    claude plugin uninstall teslavita-kb@teslavita && claude plugin marketplace update teslavita && claude plugin install teslavita-kb@teslavita
    ```
