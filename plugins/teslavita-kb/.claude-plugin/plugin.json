@@ -1,7 +1,10 @@
 {
   "name": "teslavita-kb",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "База знаний Tesla Vita: совещания, записи и документы компании в виде графа — поиск, добавление, доступ к своим файлам и вопросы коллегам",
-  "author": { "name": "Tesla Vita" },
-  "homepage": "https://admin.teslavita.space/profile"
+  "author": {
+    "name": "Tesla Vita"
+  },
+  "homepage": "https://admin.teslavita.space/profile",
+  "types": "./types/index.d.ts"
 }

@@ -5,18 +5,27 @@
 #
 # It always prints a JSON object. {} means "no sign-in yet": Claude Code then uses its own, and
 # tv-kb opens the sign-in in the browser so that the next connection has it.
-# tv-kb is fetched on first use and again with every new plugin version.
-plugin=0.6.2
+# tv-kb is fetched on first use, with every new plugin version, and once an hour when the base serves a
+# newer build (curl -z: nothing is downloaded when it has not changed), so a plugin release never waits
+# for the base's deploy.
+plugin=0.6.3
 dir="$HOME/.config/tv-kb/bin"
 bin="$dir/tv-kb"
-if [ ! -x "$bin" ] || [ "$(cat "$dir/.plugin" 2>/dev/null)" != "$plugin" ]; then
+newer=
+if [ -x "$bin" ] && [ "$(cat "$dir/.plugin" 2>/dev/null)" = "$plugin" ]; then
+  [ -n "$(find "$dir/.plugin" -mmin -60 2>/dev/null)" ] || newer=1
+fi
+if [ ! -x "$bin" ] || [ "$(cat "$dir/.plugin" 2>/dev/null)" != "$plugin" ] || [ -n "$newer" ]; then
   case "$(uname -s)" in Darwin) os=darwin ;; Linux) os=linux ;; *) os= ;; esac
   case "$(uname -m)" in arm64 | aarch64) arch=arm64 ;; x86_64 | amd64) arch=amd64 ;; *) arch= ;; esac
   part="$bin.$$"
   if [ -n "$os" ] && [ -n "$arch" ] && mkdir -p "$dir" &&
-    curl -fsS --max-time 8 -o "$part" "https://kb.teslavita.space/cli/tv-kb-$os-$arch" &&
-    chmod 755 "$part" && mv -f "$part" "$bin"; then
-    echo "$plugin" >"$dir/.plugin"
+    curl -fsSR --max-time 8 ${newer:+-z "$bin"} -o "$part" "https://kb.teslavita.space/cli/tv-kb-$os-$arch"; then
+    if [ -s "$part" ]; then
+      chmod 755 "$part" && mv -f "$part" "$bin" && echo "$plugin" >"$dir/.plugin"
+    else
+      touch "$dir/.plugin" # the same build: asked again in an hour
+    fi
   fi
   rm -f "$part"
 fi
