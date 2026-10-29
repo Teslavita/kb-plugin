@@ -1,6 +1,6 @@
 {
   "name": "teslavita-kb",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "База знаний Tesla Vita: совещания, записи и документы компании в виде графа — поиск, добавление, доступ к своим файлам и вопросы коллегам",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
