@@ -1,9 +1,9 @@
 // Colleagues' questions pop up in Claude Code (Sergey, 29.10.2026): once a minute, whether or not the person writes,
 // the mod asks the knowledge base what waits (tv-kb inbox --peek: nothing is marked). Something new: a toast; while
-// anything waits: a line above the prompt with «Показать», which asks Claude to show it. Only inside Claude Code,
+// anything waits: a line above the prompt with «Показать», which opens the texts in place. Only inside Claude Code,
 // no notifications of the computer (Sergey's choice). No tv-kb yet, no sign-in or an older tv-kb: nothing is shown.
 // Reliably (Sergey, 29.10): another session of the person (a remote one, a project's) being shown something does not
-// count. A question stays until answered; an answer of the last days until «Понятно» or «Показать» on this computer.
+// count. A question stays until answered; an answer of the last days until «Понятно» on this computer.
 import { atom, read, update } from 'claude-code'
 import type { Engine, Register } from 'claude-code'
 
@@ -17,6 +17,7 @@ const WORK = `case "$(printf %s "$1" | tr '[:upper:]' '[:lower:]')" in *teslavit
 git -C "$1" remote -v 2>/dev/null | grep -qi 'github\\.com[:/]teslavita/'`
 const waiting = atom({ plugin: 'teslavita-kb', key: 'waiting' } as const, null)
 const atWork = atom({ plugin: 'teslavita-kb', key: 'work' } as const, false)
+const opened = atom({ plugin: 'teslavita-kb', key: 'opened' } as const, false)
 
 const clip = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n - 1) + '…')
 
@@ -68,7 +69,9 @@ export const register: Register = on => {
         const keep = [...got.questions.map(q => `q${q.id}`), ...got.answers.map(a => `a${a.id}`)]
         await $.store.set('told', [...new Set([...told].filter(k => keep.includes(k)).concat(keep))])
       }
-      await update($, waiting, () => (got.questions.length || got.answers.length ? got : null))
+      const any = got.questions.length > 0 || got.answers.length > 0
+      await update($, waiting, () => (any ? got : null))
+      if (!any) await update($, opened, () => false)
     }
 
     void look()
@@ -77,50 +80,59 @@ export const register: Register = on => {
   })
 
 
+  // «Показать» opens the texts right in the line: no Claude turn, so it works while one runs and in any project.
+  // In work on Tesla Vita «Предложить ответ» puts a request for a draft into the prompt box, for the person to send.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const w = await read($, waiting)
     if (e.props.hasSurvey || w === null) {
       return next(e)
     }
     const { Box, Button, Text } = $.ui.resolve(e)
-    const q = w.questions[0]
-    if (q) {
-      const say = `📩 Вопрос №${q.id} от ${q.from}: «${clip(q.question, 60)}»` +
-        (w.questions.length > 1 ? ` и ещё ${w.questions.length - 1}` : '')
+    const work = await read($, atWork)
+    const draft = (q: Waiting['questions'][number]) => (
+      <Button
+        key={`draft-${q.id}`}
+        label="Предложить ответ"
+        onPress={() =>
+          void $.prompt.fill({
+            text: `Покажи вопрос №${q.id} от ${q.from} и предложи черновик ответа: поищи в базе знаний и в Linear. Ничего не отправляй, пока я не скажу.`,
+          })
+        }
+      />
+    )
+    if (await read($, opened)) {
       return (
-        <Box>
-          <Text>{say} </Text>
-          {(await read($, atWork)) ? (
-            <Button
-              key="show"
-              label="Предложить ответ"
-              onPress={() =>
-                void $.prompt.submit({
-                  text: `Покажи вопрос №${q.id} от ${q.from} и предложи черновик ответа: поищи в базе знаний и в Linear. Ничего не отправляй, пока я не скажу.`,
-                })
-              }
-            />
-          ) : (
-            <Button key="show" label="Показать" onPress={() => void $.prompt.submit({ text: 'Покажи вопросы мне' })} />
-          )}
+        <Box flexDirection="column">
+          {w.questions.map(q => (
+            <Box key={`q-${q.id}`}>
+              <Text>
+                📩 Вопрос №{q.id} от {q.from}{q.task ? ` (${q.task})` : ''}: «{q.question}» — ответить: «ответь на вопрос №{q.id}: …»{' '}
+              </Text>
+              {work ? draft(q) : null}
+            </Box>
+          ))}
+          {w.answers.map(a => (
+            <Box key={`a-${a.id}`}>
+              <Text>✅ {a.from} ответил(а) на ваш вопрос №{a.id}: «{a.answer}» </Text>
+              <Button key={`ok-${a.id}`} label="Понятно" onPress={() => void readHere($, a.id)} />
+            </Box>
+          ))}
+          <Button key="hide" label="Скрыть" onPress={() => void update($, opened, () => false)} />
         </Box>
       )
     }
+    const q = w.questions[0]
     const a = w.answers[0]
-    const say = `✅ ${a.from} ответил(а) на ваш вопрос №${a.id}: «${clip(a.answer, 60)}»` +
-      (w.answers.length > 1 ? ` и ещё ${w.answers.length - 1}` : '')
+    const more = w.questions.length + w.answers.length - 1
+    const say = (q
+      ? `📩 Вопрос №${q.id} от ${q.from}: «${clip(q.question, 60)}»`
+      : `✅ ${a.from} ответил(а) на ваш вопрос №${a.id}: «${clip(a.answer, 60)}»`) + (more > 0 ? ` и ещё ${more}` : '')
     return (
       <Box>
         <Text>{say} </Text>
-        <Button
-          key="show"
-          label="Показать"
-          onPress={() => {
-            void readHere($, a.id)
-            void $.prompt.submit({ text: `Покажи ответ на мой вопрос №${a.id}` })
-          }}
-        />
-        <Button key="ok" label="Понятно" onPress={() => void readHere($, a.id)} />
+        <Button key="show" label="Показать" onPress={() => void update($, opened, () => true)} />
+        {q && work ? draft(q) : null}
+        {!q && a ? <Button key={`ok-${a.id}`} label="Понятно" onPress={() => void readHere($, a.id)} /> : null}
       </Box>
     )
   })

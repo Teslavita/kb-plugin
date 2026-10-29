@@ -22,9 +22,9 @@ test('a new question pops up once and stays above the prompt until answered', as
     return { value: undefined }
   })
   const prompts: string[] = []
-  on('prompt.submit', (_, e) => {
+  on('prompt.fill', (_, e) => {
     prompts.push(e.text)
-    return { text: e.text }
+    return { isFilled: true, text: e.text, cursor: e.text.length }
   })
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('ui.render', ($, e) => {
@@ -40,10 +40,10 @@ test('a new question pops up once and stays above the prompt until answered', as
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ ...ABOVE, surface })
     expect((await ui.find({ type: 'Text', text: /Вопрос №7/ }))?.text).toContain('Где макет?')
-    await ui.press({ key: 'show' })
+    await ui.press({ key: 'draft-7' })
     await ui.unmount()
   }
-  expect(prompts[0]).toContain('предложи черновик ответа') // work on Tesla Vita: Claude looks for an answer
+  expect(prompts[0]).toContain('предложи черновик ответа') // work on Tesla Vita: the request waits in the prompt box
 
   await clock.advance(60_000) // the same question a minute later: no second toast
   expect(ran.length).toBe(2)
@@ -61,7 +61,7 @@ test('a new question pops up once and stays above the prompt until answered', as
   expect(toasts[1]).toBe('✅ Павел ответил(а) на ваш вопрос №4')
   ui = await $.ui.mount({ ...ABOVE, surface: 'desktop' })
   expect((await ui.find({ type: 'Text', text: /№4/ }))?.text).toContain('У меня 0.6.3')
-  await ui.press({ key: 'ok' })
+  await ui.press({ key: 'ok-4' })
   await ui.unmount()
   ui = await $.ui.mount({ ...ABOVE, surface: 'terminal' })
   expect((await ui.find({ type: 'Text' }))?.text).toBe('engine')
@@ -83,9 +83,9 @@ test('in a person own project the pop-up alone: «Показать», nothing se
   })
   on('ui.toast', () => ({ value: undefined }))
   const prompts: string[] = []
-  on('prompt.submit', (_, e) => {
+  on('prompt.fill', (_, e) => {
     prompts.push(e.text)
-    return { text: e.text }
+    return { isFilled: true, text: e.text, cursor: e.text.length }
   })
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('ui.render', ($, e) => {
@@ -96,7 +96,10 @@ test('in a person own project the pop-up alone: «Показать», nothing se
   await clock.settle()
   const ui = await $.ui.mount({ ...ABOVE, surface: 'terminal' })
   expect((await ui.find({ type: 'Text', text: /Вопрос №7/ }))?.text).toContain('Ира')
-  await ui.press({ key: 'show' })
+  expect(await ui.find({ key: 'draft-7' })).toBeUndefined()
+  await ui.press({ key: 'show' }) // opens the text in place: nothing asked of Claude
+  expect((await ui.find({ type: 'Text', text: /ответить/ }))?.text).toContain('ответь на вопрос №7')
+  await ui.press({ key: 'hide' })
   await ui.unmount()
-  expect(prompts).toEqual(['Покажи вопросы мне'])
+  expect(prompts).toEqual([])
 })
