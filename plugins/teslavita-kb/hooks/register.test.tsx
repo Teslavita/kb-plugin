@@ -47,7 +47,24 @@ test('a new question pops up once and stays above the prompt until answered', as
 
   inbox = { questions: [], answers: [] } // answered: the line goes
   await clock.advance(60_000)
-  const ui = await $.ui.mount({ ...ABOVE, surface: 'terminal' })
+  let ui = await $.ui.mount({ ...ABOVE, surface: 'terminal' })
   expect((await ui.find({ type: 'Text' }))?.text).toBe('engine')
   await ui.unmount()
+
+  // An answer, though another session of the person was shown it: a toast, the line until «Понятно», then never here.
+  inbox = { questions: [], answers: [{ id: 4, from: 'Павел', answer: 'У меня 0.6.3' }] }
+  await clock.advance(60_000)
+  expect(toasts[1]).toBe('✅ Павел ответил(а) на ваш вопрос №4')
+  ui = await $.ui.mount({ ...ABOVE, surface: 'desktop' })
+  expect((await ui.find({ type: 'Text', text: /№4/ }))?.text).toContain('У меня 0.6.3')
+  await ui.press({ key: 'ok' })
+  await ui.unmount()
+  ui = await $.ui.mount({ ...ABOVE, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text' }))?.text).toBe('engine')
+  await ui.unmount()
+  await clock.advance(60_000)
+  ui = await $.ui.mount({ ...ABOVE, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text' }))?.text).toBe('engine')
+  await ui.unmount()
+  expect(toasts.length).toBe(2)
 })
