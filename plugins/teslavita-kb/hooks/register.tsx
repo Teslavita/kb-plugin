@@ -16,6 +16,7 @@ const WORK = `case "$(printf %s "$1" | tr '[:upper:]' '[:lower:]')" in *teslavit
 [ -e "$1/.teslavita" ] && exit 0
 git -C "$1" remote -v 2>/dev/null | grep -qi 'github\\.com[:/]teslavita/'`
 const waiting = atom({ plugin: 'teslavita-kb', key: 'waiting' } as const, null)
+const atWork = atom({ plugin: 'teslavita-kb', key: 'work' } as const, false)
 
 const clip = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n - 1) + '…')
 
@@ -34,14 +35,13 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     // Not e.isInteractive: the Claude app runs Claude Code through the SDK, where it is false (0.6.3 showed nothing there).
     const done = await next(e)
-    // Only in work on Tesla Vita (Sergey, 29.10): elsewhere silent.
+    // Work on Tesla Vita: «Предложить ответ» asks Claude to look for one. Elsewhere the pop-up alone, nothing searched
+    // (Sergey, 29.10); the hooks there stay silent.
+    let work = false
     try {
-      if ((await $.process.run(['sh', '-c', WORK, 'kb-work', e.cwd], { timeoutMs: 5_000 })).exitCode !== 0) {
-        return done
-      }
-    } catch {
-      return done
-    }
+      work = (await $.process.run(['sh', '-c', WORK, 'kb-work', e.cwd], { timeoutMs: 5_000 })).exitCode === 0
+    } catch {}
+    await update($, atWork, () => work)
     const home = await $.env.get('HOME')
     const bin = `${home}/.config/tv-kb/bin/tv-kb`
 
@@ -90,7 +90,19 @@ export const register: Register = on => {
       return (
         <Box>
           <Text>{say} </Text>
-          <Button key="show" label="Показать" onPress={() => void $.prompt.submit({ text: 'Покажи вопросы мне' })} />
+          {(await read($, atWork)) ? (
+            <Button
+              key="show"
+              label="Предложить ответ"
+              onPress={() =>
+                void $.prompt.submit({
+                  text: `Покажи вопрос №${q.id} от ${q.from} и предложи черновик ответа: поищи в базе знаний и в Linear. Ничего не отправляй, пока я не скажу.`,
+                })
+              }
+            />
+          ) : (
+            <Button key="show" label="Показать" onPress={() => void $.prompt.submit({ text: 'Покажи вопросы мне' })} />
+          )}
         </Box>
       )
     }

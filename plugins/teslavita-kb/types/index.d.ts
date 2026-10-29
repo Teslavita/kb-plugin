@@ -5,6 +5,6 @@ export type Waiting = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'teslavita-kb': { waiting: Waiting | null }
+    'teslavita-kb': { waiting: Waiting | null; work: boolean }
   }
 }
