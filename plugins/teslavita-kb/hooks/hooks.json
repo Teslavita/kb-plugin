@@ -1,0 +1,11 @@
+{
+  "description": "Вопросы коллег Tesla Vita: при старте сессии показать вопросы вам и ответы на ваши",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [{ "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/bin/kb-inbox\"", "timeout": 15 }]
+      }
+    ]
+  }
+}
