@@ -1,0 +1,8 @@
+#!/bin/sh
+# Is the folder $1 work on Tesla Vita (Sergey, 29.10.2026)? Colleagues' questions show up only there: a folder whose
+# path names TeslaVita or TvtApp, one holding a .teslavita mark, or a git repository of github.com/Teslavita. In a
+# person's own projects Claude Code stays silent and marks nothing; the bot in Telegram still writes.
+dir="${1:-$PWD}"
+case "$(printf %s "$dir" | tr '[:upper:]' '[:lower:]')" in *teslavita* | *tvtapp*) exit 0 ;; esac
+[ -e "$dir/.teslavita" ] && exit 0
+git -C "$dir" remote -v 2>/dev/null | grep -qi 'github\.com[:/]teslavita/'

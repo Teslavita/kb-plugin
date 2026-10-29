@@ -5,6 +5,7 @@
 # never stops a session or a message: no tv-kb yet (kb-headers fetches it on the first connection), no sign-in, no
 # network or an older tv-kb without this command — nothing is printed.
 bin="$HOME/.config/tv-kb/bin/tv-kb"
+sh "$(dirname "$0")/kb-work" "${CLAUDE_PROJECT_DIR:-$PWD}" || exit 0 # not work on Tesla Vita: silent
 [ -x "$bin" ] || exit 0
 "$bin" inbox --hook --event "${1:-SessionStart}" 2>/dev/null || true
 exit 0

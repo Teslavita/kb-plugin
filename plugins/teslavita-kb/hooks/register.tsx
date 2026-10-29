@@ -10,6 +10,11 @@ import type { Engine, Register } from 'claude-code'
 import type { Waiting } from '../types'
 
 const EVERY = 60_000
+// The test of bin/kb-work, which the hooks run: a path naming TeslaVita or TvtApp, a .teslavita mark, a git
+// repository of github.com/Teslavita.
+const WORK = `case "$(printf %s "$1" | tr '[:upper:]' '[:lower:]')" in *teslavita* | *tvtapp*) exit 0 ;; esac
+[ -e "$1/.teslavita" ] && exit 0
+git -C "$1" remote -v 2>/dev/null | grep -qi 'github\\.com[:/]teslavita/'`
 const waiting = atom({ plugin: 'teslavita-kb', key: 'waiting' } as const, null)
 
 const clip = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n - 1) + '…')
@@ -29,6 +34,14 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     // Not e.isInteractive: the Claude app runs Claude Code through the SDK, where it is false (0.6.3 showed nothing there).
     const done = await next(e)
+    // Only in work on Tesla Vita (Sergey, 29.10): elsewhere silent.
+    try {
+      if ((await $.process.run(['sh', '-c', WORK, 'kb-work', e.cwd], { timeoutMs: 5_000 })).exitCode !== 0) {
+        return done
+      }
+    } catch {
+      return done
+    }
     const home = await $.env.get('HOME')
     const bin = `${home}/.config/tv-kb/bin/tv-kb`
 

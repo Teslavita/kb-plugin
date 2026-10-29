@@ -9,6 +9,10 @@ test('a new question pops up once and stays above the prompt until answered', as
   let inbox = { questions: [{ id: 7, from: 'Сергей Немеш', question: 'Где макет?', task: '' }], answers: [] as unknown[] }
   const ran: string[][] = []
   on('process.run', (_, e) => {
+    if (e.argv[0] === 'sh') {
+      // kb-work: only the folder of work on Tesla Vita
+      return { value: { exitCode: e.argv[4] === '/w/TeslaVita' ? 0 : 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
     ran.push([...e.argv])
     return { value: { exitCode: 0, stdout: JSON.stringify(inbox), stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
@@ -28,7 +32,10 @@ test('a new question pops up once and stays above the prompt until answered', as
     return <Text>engine</Text>
   })
 
-  await $.session.start({ cwd: '/', surface: null, isInteractive: false })
+  await $.session.start({ cwd: '/home/p/own', surface: null, isInteractive: false }) // a person's own project: silent
+  await clock.settle()
+  expect(ran.length).toBe(0)
+  await $.session.start({ cwd: '/w/TeslaVita', surface: null, isInteractive: false })
   await clock.settle()
   expect(ran[0]).toEqual(['/home/p/.config/tv-kb/bin/tv-kb', 'inbox', '--peek'])
   expect(toasts).toEqual(['📩 Вопрос №7 от Сергей Немеш: «Где макет?»'])
