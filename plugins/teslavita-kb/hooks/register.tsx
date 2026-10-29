@@ -21,25 +21,52 @@ const clip = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n - 1) + 
 
 const tvKb = async ($: Engine) => `${await $.env.get('HOME')}/.config/tv-kb/bin/tv-kb`
 
+// A cloud session has no tv-kb sign-in, only the base's connector (Sergey, 29.10): there the mod asks through it.
+// Its name differs by where the session runs: a claude.ai connector, or this plugin's own server.
+const SERVERS = ['teslavita-kb', 'plugin:teslavita-kb:teslavita-kb', 'claude.ai teslavita-kb']
+let server = ''
+async function viaMcp($: Engine, tool: string, args: Record<string, unknown> = {}): Promise<string | undefined> {
+  for (const name of server ? [server] : SERVERS) {
+    try {
+      const r = await $.mcp.call(name, tool, args)
+      const block = r.content.find(c => c.type === 'text') as { text?: string } | undefined
+      if (!r.isError && block?.text) {
+        server = name
+        return block.text
+      }
+    } catch {}
+  }
+  return undefined
+}
+
+// tv-kb first (a computer with its sign-in), else the connector; undefined when neither answers.
+async function ask($: Engine, argv: string[], tool: string, args: Record<string, unknown>, timeoutMs: number, stdin?: string) {
+  try {
+    const { exitCode, stdout } = await $.process.run([await tvKb($), ...argv], { stdin, timeoutMs })
+    if (exitCode === 0) return { tvKb: true, text: stdout }
+  } catch {}
+  const text = await viaMcp($, tool, args)
+  return text === undefined ? undefined : { tvKb: false, text }
+}
+
 // The base writes a draft of the answer (up to a few minutes: it searches and reads); shown in the line when ready.
 async function proposeAnswer($: Engine, id: number) {
   const key = String(id)
   await update($, drafts, d => ({ ...d, [key]: WRITING }))
   let text = ''
+  const got = await ask($, ['inbox', '--draft', key], 'draft_answer', { id }, 240_000)
   try {
-    const { exitCode, stdout } = await $.process.run([await tvKb($), 'inbox', '--draft', key], { timeoutMs: 240_000 })
-    if (exitCode === 0) text = ((JSON.parse(stdout) as { draft?: string }).draft ?? '').trim()
+    if (got) text = (got.tvKb ? ((JSON.parse(got.text) as { draft?: string }).draft ?? '') : got.text).trim()
   } catch {}
+  if (text.startsWith('Не получилось') || text.startsWith('Черновик не получился')) text = ''
   await update($, drafts, d => ({ ...d, [key]: text }))
   if (!text) $.ui.toast(`Черновик ответа на вопрос №${id} не получился, попробуйте ещё раз`, { timeoutMs: 10_000 })
 }
 
 // «Отправить»: the draft goes as the person's answer; the question leaves the line.
 async function sendAnswer($: Engine, id: number, text: string) {
-  try {
-    const { exitCode } = await $.process.run([await tvKb($), 'inbox', '--answer', String(id)], { stdin: text, timeoutMs: 30_000 })
-    if (exitCode !== 0) throw new Error()
-  } catch {
+  const got = await ask($, ['inbox', '--answer', String(id)], 'answer_question', { id, answer: text }, 30_000, text)
+  if (!got || got.text.startsWith('Не отправлено')) {
     $.ui.toast(`Ответ на вопрос №${id} не ушёл, попробуйте ещё раз`, { timeoutMs: 10_000 })
     return
   }
@@ -66,16 +93,13 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     // Not e.isInteractive: the Claude app runs Claude Code through the SDK, where it is false (0.6.3 showed nothing there).
     const done = await next(e)
-    const bin = await tvKb($)
 
     const look = async () => {
       let got: Waiting
       try {
-        const { exitCode, stdout } = await $.process.run([bin, 'inbox', '--peek'], { timeoutMs: 10_000 })
-        if (exitCode !== 0) {
-          return
-        }
-        got = JSON.parse(stdout) as Waiting
+        const r = await ask($, ['inbox', '--peek'], 'pending_for_popup', {}, 10_000)
+        if (!r) return
+        got = JSON.parse(r.text.split('\n')[0]) as Waiting
       } catch {
         return
       }

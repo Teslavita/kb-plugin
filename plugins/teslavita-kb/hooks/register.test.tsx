@@ -73,3 +73,45 @@ test('a question pops up, the base drafts the answer, «Отправить» sen
   await ui.unmount()
   expect(toasts.filter(t => t.includes('№4')).length).toBe(1)
 })
+
+test('in a cloud session (no tv-kb) the pop-up asks the base through its connector', async ($, on) => {
+  const clock = mock.clock(on)
+  mock.store(on)
+  mock.env(on, { HOME: '/root' })
+  on('process.run', () => ({ value: { exitCode: 127, stdout: '', stderr: 'no tv-kb', isStdoutTruncated: false, isStderrTruncated: false } }))
+  const calls: string[] = []
+  on('mcp.call', (_, e) => {
+    calls.push(`${e.server} ${e.tool}`)
+    if (e.server !== 'teslavita-kb') throw new Error('no such server')
+    const text =
+      e.tool === 'pending_for_popup'
+        ? JSON.stringify({ questions: [{ id: 9, from: 'Константин Горбов', question: 'Что с бинаром?', task: '' }], answers: [] }) + '\n\nnote'
+        : e.tool === 'draft_answer'
+          ? 'Готово ядро, в работе стенд.'
+          : 'Ответ на вопрос №9 записан'
+    return { value: { content: [{ type: 'text', text }], isError: false } }
+  })
+  const toasts: string[] = []
+  on('ui.toast', (_, e) => {
+    toasts.push(e.text)
+    return { value: undefined }
+  })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>engine</Text>
+  })
+  await $.session.start({ cwd: '/home/user/tvt', surface: null, isInteractive: false })
+  await clock.settle()
+  expect(toasts).toEqual(['📩 Вопрос №9 от Константин Горбов: «Что с бинаром?»'])
+  const ui = await $.ui.mount({ ...ABOVE, surface: 'desktop' })
+  await ui.press({ key: 'show' })
+  await ui.press({ key: 'draft-9' })
+  await clock.settle()
+  expect((await ui.find({ type: 'Text', text: /Черновик/ }))?.text).toContain('Готово ядро')
+  await ui.press({ key: 'send-9' })
+  await clock.settle()
+  await ui.unmount()
+  expect(calls).toEqual(['teslavita-kb pending_for_popup', 'teslavita-kb draft_answer', 'teslavita-kb answer_question'])
+  expect(toasts.at(-1)).toBe('Ответ на вопрос №9 отправлен')
+})
