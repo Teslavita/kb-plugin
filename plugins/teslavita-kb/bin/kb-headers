@@ -6,7 +6,7 @@
 # It always prints a JSON object. {} means "no sign-in yet": Claude Code then uses its own, and
 # tv-kb opens the sign-in in the browser so that the next connection has it.
 # tv-kb is fetched on first use and again with every new plugin version.
-plugin=0.5.2
+plugin=0.6.0
 dir="$HOME/.config/tv-kb/bin"
 bin="$dir/tv-kb"
 if [ ! -x "$bin" ] || [ "$(cat "$dir/.plugin" 2>/dev/null)" != "$plugin" ]; then

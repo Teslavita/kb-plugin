@@ -1,0 +1,9 @@
+#!/bin/sh
+# Claude Code runs this at the start of a session (hooks/hooks.json): questions from colleagues to the person and
+# answers to theirs, from the knowledge base (tv-kb inbox --hook prints the JSON Claude Code reads). It never stops a
+# session from starting: no tv-kb yet (kb-headers fetches it on the first connection), no sign-in, no network or an
+# older tv-kb without this command — nothing is printed.
+bin="$HOME/.config/tv-kb/bin/tv-kb"
+[ -x "$bin" ] || exit 0
+"$bin" inbox --hook 2>/dev/null || true
+exit 0
