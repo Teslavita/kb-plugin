@@ -8,7 +8,7 @@
 # tv-kb is fetched on first use, with every new plugin version, and once an hour when the base serves a
 # newer build (curl -z: nothing is downloaded when it has not changed), so a plugin release never waits
 # for the base's deploy.
-plugin=0.6.5
+plugin=0.6.6
 dir="$HOME/.config/tv-kb/bin"
 bin="$dir/tv-kb"
 newer=
