@@ -1,10 +1,27 @@
 {
-  "description": "Вопросы коллег Tesla Vita: при старте сессии показать вопросы вам и ответы на ваши",
+  "description": "Вопросы коллег Tesla Vita: при старте сессии и на ваших сообщениях (не чаще раза в минуту) показать вопросы вам и ответы на ваши",
   "hooks": {
     "SessionStart": [
       {
         "matcher": "startup|resume",
-        "hooks": [{ "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/bin/kb-inbox\"", "timeout": 15 }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/bin/kb-inbox\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/bin/kb-inbox\" UserPromptSubmit",
+            "timeout": 5
+          }
+        ]
       }
     ]
   }
