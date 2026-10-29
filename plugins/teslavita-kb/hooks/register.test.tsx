@@ -28,7 +28,7 @@ test('a new question pops up once and stays above the prompt until answered', as
     return <Text>engine</Text>
   })
 
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await $.session.start({ cwd: '/', surface: null, isInteractive: false })
   await clock.settle()
   expect(ran[0]).toEqual(['/home/p/.config/tv-kb/bin/tv-kb', 'inbox', '--peek'])
   expect(toasts).toEqual(['📩 Вопрос №7 от Сергей Немеш: «Где макет?»'])

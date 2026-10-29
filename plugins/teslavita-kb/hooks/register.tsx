@@ -14,10 +14,8 @@ const clip = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n - 1) + 
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
+    // Not e.isInteractive: the Claude app runs Claude Code through the SDK, where it is false (0.6.3 showed nothing there).
     const done = await next(e)
-    if (!e.isInteractive) {
-      return done
-    }
     const home = await $.env.get('HOME')
     const bin = `${home}/.config/tv-kb/bin/tv-kb`
 
