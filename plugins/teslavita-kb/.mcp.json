@@ -3,9 +3,9 @@
     "teslavita-kb": {
       "type": "http",
       "url": "https://kb.teslavita.space/mcp",
-      "headers": { "X-Teslavita-Plugin": "0.6.7", "X-Teslavita-App": "Claude Code" },
+      "headers": { "X-Teslavita-Plugin": "0.6.8", "X-Teslavita-App": "Claude Code" },
       "headersHelper": "sh \"${CLAUDE_PLUGIN_ROOT}/bin/kb-headers\"",
-      "http_headers": { "X-Teslavita-Plugin": "0.6.7", "X-Teslavita-App": "Codex" },
+      "http_headers": { "X-Teslavita-Plugin": "0.6.8", "X-Teslavita-App": "Codex" },
       "http_headers_helper": "f=\"$HOME/.config/tv-kb/bin/tv-kb\"; [ -x \"$f\" ] && \"$f\" mcp-headers --no-login 2>/dev/null || echo '{}'"
     }
   }
