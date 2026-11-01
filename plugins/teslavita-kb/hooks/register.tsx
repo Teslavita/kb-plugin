@@ -63,6 +63,9 @@ async function proposeAnswer($: Engine, id: number) {
   if (!text) $.ui.toast(`Черновик ответа на вопрос №${id} не получился, попробуйте ещё раз`, { timeoutMs: 10_000 })
 }
 
+// «ОК» answers a question that needs no words (Pavel's №11, Sergey 01.11): otherwise it waits forever.
+const OK = 'ОК'
+
 // «Отправить»: the draft goes as the person's answer; the question leaves the line.
 async function sendAnswer($: Engine, id: number, text: string) {
   const got = await ask($, ['inbox', '--answer', String(id)], 'answer_question', { id, answer: text }, 30_000, text)
@@ -145,6 +148,7 @@ export const register: Register = on => {
               📩 Вопрос №{q.id} от {q.from}{q.task ? ` (${q.task})` : ''}: «{q.question}»{' '}
             </Text>
             {d === '' ? <Button key={`draft-${q.id}`} label="Предложить ответ" onPress={() => void proposeAnswer($, q.id)} /> : null}
+            <Button key={`okq-${q.id}`} label="ОК" onPress={() => void sendAnswer($, q.id, OK)} />
           </Box>
           {d === WRITING ? <Text>   ✍️ База готовит черновик ответа…</Text> : null}
           {d && d !== WRITING ? (
