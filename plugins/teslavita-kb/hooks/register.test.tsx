@@ -115,3 +115,42 @@ test('in a cloud session (no tv-kb) the pop-up asks the base through its connect
   expect(calls).toEqual(['teslavita-kb pending_for_popup', 'teslavita-kb draft_answer', 'teslavita-kb answer_question'])
   expect(toasts.at(-1)).toBe('Ответ на вопрос №9 отправлен')
 })
+
+test('«ОК» answers a question that needs no words (Pavel, №11): the base gets «ОК», the question leaves the line', async ($, on) => {
+  const clock = mock.clock(on)
+  mock.store(on)
+  mock.env(on, { HOME: '/home/p' })
+  let inbox = { questions: [{ id: 11, from: 'Павел', question: 'Видел макет?', task: '' }], answers: [] as unknown[] }
+  const ran: string[][] = []
+  const stdin: string[] = []
+  on('process.run', (_, e) => {
+    ran.push([...e.argv])
+    if (e.init?.stdin) stdin.push(e.init.stdin)
+    const out = e.argv.includes('--answer') ? { id: 11 } : inbox
+    return { value: { exitCode: 0, stdout: JSON.stringify(out), stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  const toasts: string[] = []
+  on('ui.toast', (_, e) => {
+    toasts.push(e.text)
+    return { value: undefined }
+  })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>engine</Text>
+  })
+  await $.session.start({ cwd: '/home/p/own', surface: null, isInteractive: false })
+  await clock.settle()
+  let ui = await $.ui.mount({ ...ABOVE, surface: 'desktop' })
+  await ui.press({ key: 'show' })
+  await ui.press({ key: 'okq-11' })
+  await clock.settle()
+  expect(ran.at(-1)).toEqual(['/home/p/.config/tv-kb/bin/tv-kb', 'inbox', '--answer', '11'])
+  expect(stdin).toEqual(['ОК'])
+  expect(toasts.at(-1)).toBe('Ответ на вопрос №11 отправлен')
+  await ui.unmount()
+  inbox = { questions: [], answers: [] }
+  ui = await $.ui.mount({ ...ABOVE, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text' }))?.text).toBe('engine')
+  await ui.unmount()
+})
