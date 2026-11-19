@@ -3,7 +3,7 @@
 // anything waits: a line above the prompt with «Показать», which opens the texts in place. Only inside Claude Code,
 // no notifications of the computer (Sergey's choice). No tv-kb yet, no sign-in or an older tv-kb: nothing is shown.
 // Reliably (Sergey, 29.10): another session of the person (a remote one, a project's) being shown something does not
-// count. A question stays until answered; an answer of the last days until «Понятно» on this computer.
+// count. A question stays until answered or «Прочитано»; an answer of the last days until «Понятно» on this computer.
 // «Предложить ответ» in any project (Sergey, 29.10): the base writes the draft with the person's access (tv-kb inbox
 // --draft), not Claude of this session; «Отправить» sends it (tv-kb inbox --answer), «Изменить» puts it in the prompt box.
 import { atom, read, update } from 'claude-code'
@@ -63,9 +63,6 @@ async function proposeAnswer($: Engine, id: number) {
   if (!text) $.ui.toast(`Черновик ответа на вопрос №${id} не получился, попробуйте ещё раз`, { timeoutMs: 10_000 })
 }
 
-// «ОК» answers a question that needs no words (Pavel's №11, Sergey 01.11): otherwise it waits forever.
-const OK = 'ОК'
-
 // «Отправить»: the draft goes as the person's answer; the question leaves the line.
 async function sendAnswer($: Engine, id: number, text: string) {
   const got = await ask($, ['inbox', '--answer', String(id)], 'answer_question', { id, answer: text }, 30_000, text)
@@ -74,6 +71,22 @@ async function sendAnswer($: Engine, id: number, text: string) {
     return
   }
   $.ui.toast(`Ответ на вопрос №${id} отправлен`, { timeoutMs: 8_000 })
+  await update($, waiting, w => {
+    if (w === null) return null
+    const left = { ...w, questions: w.questions.filter(q => q.id !== id) }
+    return left.questions.length || left.answers.length ? left : null
+  })
+}
+
+// «Прочитано» (Sergey, 19.11): the question is read and will be answered separately, or not at all. The base marks it
+// for the person, so it stops popping up on every computer and in Telegram reminders; nothing goes to the asker. Before
+// it the only way out was «ОК», sent to the asker as an answer and taken for consent.
+async function markRead($: Engine, id: number) {
+  const got = await ask($, ['inbox', '--read', String(id)], 'mark_question_read', { id }, 30_000)
+  if (!got || got.text.startsWith('Не получилось')) {
+    $.ui.toast(`Вопрос №${id} не отмечен, попробуйте ещё раз`, { timeoutMs: 10_000 })
+    return
+  }
   await update($, waiting, w => {
     if (w === null) return null
     const left = { ...w, questions: w.questions.filter(q => q.id !== id) }
@@ -148,7 +161,7 @@ export const register: Register = on => {
               📩 Вопрос №{q.id} от {q.from}{q.task ? ` (${q.task})` : ''}: «{q.question}»{' '}
             </Text>
             {d === '' ? <Button key={`draft-${q.id}`} label="Предложить ответ" onPress={() => void proposeAnswer($, q.id)} /> : null}
-            <Button key={`okq-${q.id}`} label="ОК" onPress={() => void sendAnswer($, q.id, OK)} />
+            <Button key={`read-${q.id}`} label="Прочитано" onPress={() => void markRead($, q.id)} />
           </Box>
           {d === WRITING ? <Text>   ✍️ База готовит черновик ответа…</Text> : null}
           {d && d !== WRITING ? (
@@ -177,7 +190,7 @@ export const register: Register = on => {
               <Button key={`ok-${a.id}`} label="Понятно" onPress={() => void readHere($, a.id)} />
             </Box>
           ))}
-          <Button key="hide" label="Скрыть" onPress={() => void update($, opened, () => false)} />
+          <Button key="hide" label="Свернуть" onPress={() => void update($, opened, () => false)} />
         </Box>
       )
     }
@@ -191,6 +204,7 @@ export const register: Register = on => {
       <Box>
         <Text>{say} </Text>
         <Button key="show" label="Показать" onPress={() => void update($, opened, () => true)} />
+        {q ? <Button key={`read-${q.id}`} label="Прочитано" onPress={() => void markRead($, q.id)} /> : null}
         {!q && a ? <Button key={`ok-${a.id}`} label="Понятно" onPress={() => void readHere($, a.id)} /> : null}
       </Box>
     )

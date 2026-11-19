@@ -116,24 +116,19 @@ test('in a cloud session (no tv-kb) the pop-up asks the base through its connect
   expect(toasts.at(-1)).toBe('Ответ на вопрос №9 отправлен')
 })
 
-test('«ОК» answers a question that needs no words (Pavel, №11): the base gets «ОК», the question leaves the line', async ($, on) => {
+test('«Прочитано» hides a question without answering it (Sergey, 19.11): nothing goes to the asker', async ($, on) => {
   const clock = mock.clock(on)
   mock.store(on)
   mock.env(on, { HOME: '/home/p' })
-  let inbox = { questions: [{ id: 11, from: 'Павел', question: 'Видел макет?', task: '' }], answers: [] as unknown[] }
+  let inbox = { questions: [{ id: 11, from: 'Константин Горбов', question: 'Одобряешь?', task: '' }], answers: [] as unknown[] }
   const ran: string[][] = []
-  const stdin: string[] = []
   on('process.run', (_, e) => {
     ran.push([...e.argv])
-    if (e.init?.stdin) stdin.push(e.init.stdin)
-    const out = e.argv.includes('--answer') ? { id: 11 } : inbox
+    if (e.argv.includes('--read')) inbox = { questions: [], answers: [] } // the base marks it read for the person
+    const out = e.argv.includes('--read') ? { id: 11 } : inbox
     return { value: { exitCode: 0, stdout: JSON.stringify(out), stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
-  const toasts: string[] = []
-  on('ui.toast', (_, e) => {
-    toasts.push(e.text)
-    return { value: undefined }
-  })
+  on('ui.toast', () => ({ value: undefined }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('ui.render', ($, e) => {
     const { Text } = $.ui.resolve(e)
@@ -142,14 +137,17 @@ test('«ОК» answers a question that needs no words (Pavel, №11): the base g
   await $.session.start({ cwd: '/home/p/own', surface: null, isInteractive: false })
   await clock.settle()
   let ui = await $.ui.mount({ ...ABOVE, surface: 'desktop' })
-  await ui.press({ key: 'show' })
-  await ui.press({ key: 'okq-11' })
+  // Right on the line, without opening it.
+  await ui.press({ key: 'read-11' })
   await clock.settle()
-  expect(ran.at(-1)).toEqual(['/home/p/.config/tv-kb/bin/tv-kb', 'inbox', '--answer', '11'])
-  expect(stdin).toEqual(['ОК'])
-  expect(toasts.at(-1)).toBe('Ответ на вопрос №11 отправлен')
+  expect(ran.at(-1)).toEqual(['/home/p/.config/tv-kb/bin/tv-kb', 'inbox', '--read', '11'])
+  expect(ran.some(a => a.includes('--answer'))).toBe(false)
   await ui.unmount()
-  inbox = { questions: [], answers: [] }
+  ui = await $.ui.mount({ ...ABOVE, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text' }))?.text).toBe('engine')
+  await ui.unmount()
+  // The next look does not bring it back.
+  await clock.advance(60_000)
   ui = await $.ui.mount({ ...ABOVE, surface: 'terminal' })
   expect((await ui.find({ type: 'Text' }))?.text).toBe('engine')
   await ui.unmount()
